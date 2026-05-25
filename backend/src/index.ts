@@ -15,6 +15,8 @@ import { initVaultService } from "./services/vaultService";
 import { startScheduler } from "./agents/scheduler";
 import vaultRouter from "./routes/vault";
 import treasuryRouter from "./routes/treasury";
+import walletRouter from "./routes/wallet";
+import { startTelegramBot } from "./bots/telegramBot";
 import { mkdir } from "fs/promises";
 
 const PORT = process.env.PORT || 4000;
@@ -42,6 +44,7 @@ async function bootstrap() {
   // Routes
   app.use("/api", vaultRouter);
   app.use("/api/treasury", treasuryRouter);
+  app.use("/api/wallet", walletRouter);
 
   // Root
   app.get("/", (_req, res) => {
@@ -60,6 +63,14 @@ async function bootstrap() {
         "GET  /api/payments/log",
         "GET  /api/payments/stats",
         "POST /api/x402/simulate",
+        "POST /api/wallet/analyze",
+        "POST /api/wallet/tag",
+        "GET  /api/wallet/tags",
+        "DELETE /api/wallet/tag/:txHash",
+        "POST /api/treasury/analyze",
+        "GET  /api/treasury/evm/:address/balance",
+        "GET  /api/treasury/evm/:address/txlist",
+        "GET  /api/treasury/btc/:address",
       ],
     });
   });
@@ -73,6 +84,9 @@ async function bootstrap() {
 
   // Start scheduler
   startScheduler(process.env.CRON_INTERVAL || "* * * * *");
+
+  // Start Telegram bot (no-op if TELEGRAM_BOT_TOKEN not set)
+  startTelegramBot();
 }
 
 bootstrap().catch((err) => {

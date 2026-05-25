@@ -9,6 +9,7 @@
 
 import { Router, Request, Response } from "express";
 import { logger } from "../logger";
+import { forecastCashflow, type VaultSnapshot, type PaymentHistoryEntry } from "../agents/forecastAgent";
 
 const router = Router();
 
@@ -156,6 +157,27 @@ Recent Activity: ${snapshot.recentTxs.length} recent transactions analyzed`;
     // Fall back to heuristic analysis on OpenAI failure
     const insights = buildHeuristicInsights(snapshot);
     res.json({ insights, model: "heuristic", powered_by: "built-in", fallback: true });
+  }
+});
+
+// ─── POST /api/treasury/forecast ─────────────────────────────────────────────
+
+router.post("/forecast", async (req: Request, res: Response) => {
+  const { vault, history } = req.body as {
+    vault?: VaultSnapshot;
+    history?: PaymentHistoryEntry[];
+  };
+
+  if (!vault?.address) {
+    return res.status(400).json({ error: "vault snapshot required" });
+  }
+
+  try {
+    const forecast = await forecastCashflow(vault, history ?? []);
+    res.json(forecast);
+  } catch (err: any) {
+    logger.error("Forecast failed", { error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

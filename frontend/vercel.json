@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build",
+  "installCommand": "npm install -g pnpm@9.15.9 && pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm run build",
   "outputDirectory": ".next",
   "env": {
     "NEXT_PUBLIC_DEMO_MODE": "true"

@@ -151,3 +151,92 @@ export const apiExtra = {
       body: JSON.stringify({ address, paymentId }),
     }),
 };
+
+// ─── Wallet Analyzer types ────────────────────────────────────────────────────
+
+export type TransactionCategory =
+  | "payment" | "subscription" | "yield" | "swap"
+  | "gas" | "transfer" | "stablecoin" | "nft" | "unknown";
+
+export interface WalletTransaction {
+  hash: string;
+  timestamp: number;
+  from: string;
+  to: string;
+  amount: number;
+  amountUSD: number;
+  token: string;
+  category: TransactionCategory;
+  isFiltered: boolean;
+  filterReason?: string;
+  userTag?: string;
+  predictedTag?: string;
+  confidence?: number;
+}
+
+export interface RecurringPayment {
+  toAddress: string;
+  toLabel?: string;
+  amount: number;
+  amountUSD: number;
+  token: string;
+  frequency: "daily" | "weekly" | "monthly" | "irregular";
+  confidence: number;
+  nextExpected?: string;
+  occurrences: number;
+  totalSpent: number;
+}
+
+export interface CategoryBreakdown {
+  category: string;
+  amountUSD: number;
+  percentage: number;
+}
+
+export interface WalletAnalysis {
+  address: string;
+  addressType: "evm" | "bitcoin";
+  range: string;
+  totalOutflow: number;
+  totalInflow: number;
+  monthlyBurn: number;
+  runway: string;
+  reserveScore: number;
+  transactions: WalletTransaction[];
+  recurringPayments: RecurringPayment[];
+  spendByCategory: CategoryBreakdown[];
+  aiInsights: string[];
+  topRecipients: { address: string; label?: string; totalUSD: number; count: number }[];
+}
+
+export interface TransactionTag {
+  id: string;
+  txHash: string;
+  walletAddress: string;
+  userTag: string;
+  category: string;
+  createdAt: number;
+}
+
+export const walletApi = {
+  analyze: (address: string, addressType?: "evm" | "bitcoin", range: "30d" | "90d" | "180d" = "90d") =>
+    apiFetch<WalletAnalysis>("/api/wallet/analyze", {
+      method: "POST",
+      body: JSON.stringify({ address, addressType, range }),
+    }),
+
+  addTag: (txHash: string, walletAddress: string, tag: string, category?: string) =>
+    apiFetch<{ success: boolean; tag: TransactionTag }>("/api/wallet/tag", {
+      method: "POST",
+      body: JSON.stringify({ txHash, walletAddress, tag, category }),
+    }),
+
+  getTags: (address: string) =>
+    apiFetch<{ tags: TransactionTag[] }>(`/api/wallet/tags?address=${encodeURIComponent(address)}`),
+
+  deleteTag: (txHash: string, walletAddress: string) =>
+    apiFetch<{ success: boolean }>(`/api/wallet/tag/${txHash}`, {
+      method: "DELETE",
+      body: JSON.stringify({ walletAddress }),
+    }),
+};
