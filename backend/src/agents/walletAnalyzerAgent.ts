@@ -7,7 +7,15 @@
 import OpenAI from "openai";
 import { logger } from "../logger";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) return null;
+  if (!openai) {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -377,7 +385,8 @@ async function runAIAnalysis(
   transactions: Transaction[],
   userTagContext: string
 ): Promise<AIAnalysisResult> {
-  if (!process.env.OPENAI_API_KEY) {
+  const client = getOpenAIClient();
+  if (!client) {
     return buildHeuristicAnalysis(transactions);
   }
 
@@ -424,7 +433,7 @@ Return ONLY this JSON structure, no markdown, no explanation:
 }`;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },

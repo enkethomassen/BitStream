@@ -16,6 +16,8 @@ import { startScheduler } from "./agents/scheduler";
 import vaultRouter from "./routes/vault";
 import treasuryRouter from "./routes/treasury";
 import walletRouter from "./routes/wallet";
+import premiumRouter from "./routes/premium";
+import { bitstreamX402Middleware } from "./x402/x402Middleware";
 import { startTelegramBot } from "./bots/telegramBot";
 import { startWhatsappBot, whatsappRouter } from "./bots/whatsappBot";
 import { mkdir } from "fs/promises";
@@ -43,9 +45,11 @@ async function bootstrap() {
   });
 
   // Routes
+  app.use(bitstreamX402Middleware);
   app.use("/api", vaultRouter);
   app.use("/api/treasury", treasuryRouter);
   app.use("/api/wallet", walletRouter);
+  app.use("/api/premium", premiumRouter);
   app.use("/api/whatsapp", whatsappRouter);
 
   // Root
@@ -69,6 +73,8 @@ async function bootstrap() {
         "POST /api/wallet/tag",
         "GET  /api/wallet/tags",
         "DELETE /api/wallet/tag/:txHash",
+        "GET  /api/premium/forecast",
+        "GET  /api/premium/insights",
         "POST /api/treasury/analyze",
         "GET  /api/treasury/evm/:address/balance",
         "GET  /api/treasury/evm/:address/txlist",

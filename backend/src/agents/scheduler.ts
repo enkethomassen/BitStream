@@ -86,6 +86,15 @@ async function runSchedulerCycle() {
 
       totalChecked += payments.length;
 
+      const collateralRatio = Number(vaultInfo.collateralRatio);
+      if (collateralRatio > 0 && collateralRatio < 150) {
+        logger.error("Collateral ratio below 150% — pausing scheduled payments", {
+          user: userAddress,
+          collateralRatio,
+        });
+        continue;
+      }
+
       for (let i = 0; i < payments.length; i++) {
         const payment = payments[i];
 

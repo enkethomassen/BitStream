@@ -58,7 +58,8 @@ function validatePaymentHeader(header: string | undefined, amount: string): bool
     return (
       typeof decoded === "object" &&
       decoded !== null &&
-      typeof decoded.payload?.value === "string"
+      typeof decoded.payload?.value === "string" &&
+      decoded.payload.value === amount
     );
   } catch {
     return false;
@@ -117,6 +118,11 @@ export const bitstreamX402Middleware = createX402Middleware({
     token: "MUSD",
     amount: "0.1",
     description: "AI cashflow forecast endpoint — predicts MUSD inflows/outflows over 30 days",
+  },
+  "GET /api/premium/insights": {
+    token: "MUSD",
+    amount: "0.05",
+    description: "AI spending insights endpoint — categorises recurring treasury outflows",
   },
   "GET /api/premium/analytics": {
     token: "MUSD",

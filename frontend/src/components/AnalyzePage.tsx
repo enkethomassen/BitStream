@@ -5,7 +5,7 @@ import { Search, ArrowRight, RefreshCw, Tag, Eye, EyeOff, TrendingDown, Clock, S
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { walletApi, type WalletAnalysis, type WalletTransaction, type TransactionTag } from '@/lib/api';
+import { walletApi, type TransactionCategory, type WalletAnalysis, type WalletTransaction, type TransactionTag } from '@/lib/api';
 
 const E: [number,number,number,number] = [0.16, 1, 0.3, 1];
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -42,6 +42,17 @@ const CATEGORY_COLORS: Record<string, string> = {
   nft: '#f59e0b',
   unknown: '#6b6784',
 };
+
+const TAG_PRESETS: Array<{ label: string; category: TransactionCategory }> = [
+  { label: 'Bill', category: 'payment' },
+  { label: 'Subscription', category: 'subscription' },
+  { label: 'Invoice', category: 'payment' },
+  { label: 'Payroll', category: 'payment' },
+  { label: 'Rent', category: 'payment' },
+  { label: 'Tax', category: 'payment' },
+  { label: 'Software', category: 'subscription' },
+  { label: 'API', category: 'subscription' },
+];
 
 
 // ── Stat Card ────────────────────────────────────────────────────────────────
@@ -84,13 +95,14 @@ function TagPopover({ tx, walletAddress, existingTag, onTagged }: {
 }) {
   const [open, setOpen] = useState(false);
   const [val, setVal] = useState(existingTag ?? tx.predictedTag ?? '');
+  const [category, setCategory] = useState<TransactionCategory>(tx.category === 'unknown' ? 'payment' : tx.category);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (!val.trim()) return;
     setSaving(true);
     try {
-      await walletApi.addTag(tx.hash, walletAddress, val.trim());
+      await walletApi.addTag(tx.hash, walletAddress, val.trim(), category);
       onTagged(val.trim());
       setOpen(false);
     } catch { /* ignore */ }
@@ -123,6 +135,27 @@ function TagPopover({ tx, walletAddress, existingTag, onTagged }: {
               placeholder="Label this transaction…"
               className="w-full rounded-lg px-3 py-2 text-xs outline-none"
               style={{ background: 'var(--bg-input)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }} />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {TAG_PRESETS.map(p => (
+                <button key={p.label} type="button"
+                  onClick={() => { setVal(p.label); setCategory(p.category); }}
+                  className="rounded-full px-2 py-1 text-[10px] font-semibold"
+                  style={{
+                    background: val === p.label ? 'rgba(247,147,26,0.14)' : 'var(--bg-card)',
+                    border: `1px solid ${val === p.label ? 'rgba(247,147,26,0.28)' : 'var(--border-lo)'}`,
+                    color: val === p.label ? '#F7931A' : 'var(--text-muted)',
+                  }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <select value={category} onChange={e => setCategory(e.target.value as TransactionCategory)}
+              className="mt-2 w-full rounded-lg px-3 py-2 text-xs outline-none"
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}>
+              {Object.keys(CATEGORY_COLORS).map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
             <button onClick={save} disabled={saving || !val.trim()}
               className="mt-2 w-full rounded-lg py-1.5 text-xs font-semibold transition-opacity disabled:opacity-40"
               style={{ background: '#F7931A', color: '#000' }}>

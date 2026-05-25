@@ -7,7 +7,15 @@
 import OpenAI from "openai";
 import { logger } from "../logger";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) return null;
+  if (!openai) {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
 
 export interface VaultSnapshot {
   address: string;
@@ -48,7 +56,8 @@ export async function forecastCashflow(
 ): Promise<Forecast> {
   const fallback = buildHeuristicForecast(vault, history);
 
-  if (!process.env.OPENAI_API_KEY) {
+  const client = getOpenAIClient();
+  if (!client) {
     return fallback;
   }
 
@@ -74,7 +83,7 @@ Return ONLY JSON, no markdown:
 }`;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
