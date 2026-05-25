@@ -1,0 +1,26 @@
+{
+  "name": "bitstream",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bitstream — Bitcoin-backed automated cashflow engine on Mezo. Lock BTC, mint MUSD, automate payments.",
+  "packageManager": "pnpm@9.15.9",
+  "workspaces": [
+    "contracts",
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev": "pnpm run dev:backend & pnpm run dev:frontend",
+    "build": "pnpm --filter frontend run build",
+    "build:contracts": "pnpm --filter contracts compile",
+    "test:contracts": "pnpm --filter contracts test",
+    "install:all": "pnpm install"
+  },
+  "overrides": {
+    "three": "0.169.0",
+    "@types/three": "0.169.0"
+  }
+}

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:#0e0e0e; }
+.page {
+  display:flex; flex-direction:column; align-items:center;
+  padding:44px 28px 52px; gap:44px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+.section {
+  display:flex; flex-direction:column; align-items:center; gap:20px; width:100%;
+}
+.label {
+  font-size:9px; font-weight:600; letter-spacing:0.3em; text-transform:uppercase; color:#2e2e2e;
+}
+.row { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-start; }
+.col { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.card {
+  border-radius:20px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:52px 44px 44px; width:272px;
+}
+.c-dark  { background:#0b0b0b; }
+.c-light { background:#f4f3ef; }
+
+/* Wordmark */
+.wm {
+  display:flex; align-items:baseline;
+  font-size:27px; font-weight:700; letter-spacing:-0.04em;
+  margin-top:22px; line-height:1;
+  gap:0;
+}
+.sub {
+  font-size:8px; font-weight:500; letter-spacing:0.26em;
+  margin-top:9px; text-transform:uppercase;
+  color:#FF0040; opacity:0.85;
+}
+.mode { font-size:9px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#333; }
+
+/* Icon tiles */
+.icon-tile {
+  display:flex; align-items:center; justify-content:center;
+  border-radius:18px;
+}
+.sz { font-size:9px; font-weight:500; letter-spacing:0.1em; color:#333; margin-top:8px; text-align:center; }
+
+/* Nav bar */
+.nav {
+  display:flex; align-items:center; gap:13px;
+  border-radius:12px; padding:13px 22px;
+}
+.nav-wm { font-size:18px; font-weight:700; letter-spacing:-0.04em; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- PRIMARY -->
+  <div class="label">Primary Lockup</div>
+  <div class="row">
+
+    <!-- DARK -->
+    <div class="col">
+      <div class="card c-dark">
+        <!--
+          THE MARK:
+          A solid square with one corner clipped — bottom-right corner cut at 45°.
+          That clip is the settlement action: a clean, decisive cut through capital.
+          Like a ledger entry being settled. Like a payment cleared.
+          The remaining pentagon reads as a forward-facing arrow when flipped —
+          implying direction, flow, automation.
+
+          Constructed on 64×64 grid. Corner cut is 20px from corner on each side.
+          Perfectly geometric. No curves, no strokes. Pure filled shape.
+          Identical mark works on any background — just color-swap fill.
+        -->
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!--
+            Pentagon: top-left(4,4) → top-right(60,4) → right-clip(60,44) →
+            bottom-clip(20,60) → bottom-left(4,60) → close
+            The diagonal cut runs top-right to bottom-left across the square's body.
+            This creates a "sliced" look — decisive, architectural, institutional.
+          -->
+          <polygon
+            points="4,4 60,4 60,44 20,60 4,60"
+            fill="#FF0040"
+          />
+          <!--
+            White notch cut: a thin parallelogram inset from the diagonal edge —
+            creates a negative-space "tick" suggesting settlement/cleared status.
+            Goes from (52,4) → (60,4) → (60,12) → (52,4) — just a small corner triangle.
+            Actually: let's cut a clean inner rectangle to add depth/identity.
+            A white square inset in top-left = the "mint" window / vault interior.
+          -->
+          <rect x="13" y="13" width="22" height="22" rx="3" fill="#0b0b0b"/>
+        </svg>
+
+        <div class="wm">
+          <span style="color:#fff;">settle</span><span style="color:#FF0040;opacity:0.9;">mint</span>
+        </div>
+        <div class="sub">Bitcoin Cashflow · Mezo</div>
+      </div>
+      <div class="mode">Dark</div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="col">
+      <div class="card c-light">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#FF0040"/>
+          <rect x="13" y="13" width="22" height="22" rx="3" fill="#f4f3ef"/>
+        </svg>
+        <div class="wm">
+          <span style="color:#0b0b0b;">settle</span><span style="color:#FF0040;">mint</span>
+        </div>
+        <div class="sub">Bitcoin Cashflow · Mezo</div>
+      </div>
+      <div class="mode">Light</div>
+    </div>
+
+  </div>
+
+  <!-- ICON SIZES -->
+  <div class="label">Icon Applications</div>
+  <div class="row" style="align-items:flex-end;">
+
+    <!-- 80 dark -->
+    <div class="col">
+      <div class="icon-tile" style="width:80px;height:80px;background:#0b0b0b;">
+        <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
+          <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#FF0040"/>
+          <rect x="13" y="13" width="22" height="22" rx="3" fill="#0b0b0b"/>
+        </svg>
+      </div>
+      <div class="sz">80 · dark</div>
+    </div>
+
+    <!-- 80 red -->
+    <div class="col">
+      <div class="icon-tile" style="width:80px;height:80px;background:#FF0040;">
+        <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
+          <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#ffffff"/>
+          <rect x="13" y="13" width="22" height="22" rx="3" fill="#FF0040"/>
+        </svg>
+      </div>
+      <div class="sz">80 · red</div>
+    </div>
+
+    <!-- 48 light -->
+    <div class="col">
+      <div class="icon-tile" style="width:48px;height:48px;background:#f4f3ef;border:1px solid #ddd;border-radius:13px;">
+        <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
+          <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#FF0040"/>
+          <rect x="13" y="13" width="22" height="22" rx="3" fill="#f4f3ef"/>
+        </svg>
+      </div>
+      <div class="sz">48 · light</div>
+    </div>
+
+    <!-- 32 dark -->
+    <div class="col">
+      <div class="icon-tile" style="width:32px;height:32px;background:#0b0b0b;border-radius:8px;">
+        <svg width="20" height="20" viewBox="0 0 64 64" fill="none">
+          <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#FF0040"/>
+          <rect x="13" y="13" width="22" height="22" rx="2" fill="#0b0b0b"/>
+        </svg>
+      </div>
+      <div class="sz">32 · fav</div>
+    </div>
+
+  </div>
+
+  <!-- HORIZONTAL NAV LOCKUPS -->
+  <div class="label">Nav Bar</div>
+  <div class="row" style="flex-direction:column;align-items:center;gap:14px;">
+
+    <div class="nav" style="background:#0b0b0b;">
+      <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
+        <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#FF0040"/>
+        <rect x="13" y="13" width="22" height="22" rx="3" fill="#0b0b0b"/>
+      </svg>
+      <span class="nav-wm">
+        <span style="color:#fff;">settle</span><span style="color:#FF0040;">mint</span>
+      </span>
+    </div>
+
+    <div class="nav" style="background:#f4f3ef;border:1px solid #e0dfd9;">
+      <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
+        <polygon points="4,4 60,4 60,44 20,60 4,60" fill="#FF0040"/>
+        <rect x="13" y="13" width="22" height="22" rx="3" fill="#f4f3ef"/>
+      </svg>
+      <span class="nav-wm">
+        <span style="color:#0b0b0b;">settle</span><span style="color:#FF0040;">mint</span>
+      </span>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

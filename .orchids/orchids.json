@@ -1,0 +1,9 @@
+{
+  "startupCommands": [
+    "npm install -g pnpm@9.15.9; pnpm install; pnpm run dev:backend",
+    "npm install -g pnpm@9.15.9; pnpm install; pnpm run dev:frontend"
+  ],
+  "projectId": "1a221ab6-efbf-4156-a3a1-208c6ae3e1ed",
+  "templateId": "any",
+  "detectedFramework": "any"
+}

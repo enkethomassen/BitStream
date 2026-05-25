@@ -1,0 +1,203 @@
+/**
+ * routes/treasury.ts — Treasury analysis proxy + OpenAI agent
+ *
+ * Why this exists:
+ *   - Etherscan returns "NOTOK" when called from browser without API key (CORS + rate limits)
+ *   - Proxying through backend attaches the server-side API key and bypasses CORS entirely
+ *   - OpenAI agent route provides GPT-powered cashflow insights
+ */
+
+import { Router, Request, Response } from "express";
+import { logger } from "../logger";
+
+const router = Router();
+
+const ETHERSCAN_KEY = process.env.ETHERSCAN_API_KEY || "";
+const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
+
+// ─── Etherscan proxy ─────────────────────────────────────────────────────────
+// Avoids CORS + rate-limit "NOTOK" responses when called from the browser
+
+router.get("/evm/:address/balance", async (req: Request, res: Response) => {
+  const { address } = req.params;
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    return res.status(400).json({ error: "Invalid EVM address" });
+  }
+  try {
+    const keyParam = ETHERSCAN_KEY ? `&apikey=${ETHERSCAN_KEY}` : "";
+    const url = `https://api.etherscan.io/api?module=account&action=balance&address=${address}&tag=latest${keyParam}`;
+    const response = await fetch(url);
+    const data = await response.json() as any;
+    if (data.status === "0") {
+      return res.status(400).json({ error: data.message || "Etherscan error", result: data.result });
+    }
+    res.json(data);
+  } catch (err: any) {
+    logger.error("Etherscan balance proxy failed", { address, error: err.message });
+    res.status(500).json({ error: "Failed to fetch balance from Etherscan" });
+  }
+});
+
+router.get("/evm/:address/txlist", async (req: Request, res: Response) => {
+  const { address } = req.params;
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    return res.status(400).json({ error: "Invalid EVM address" });
+  }
+  try {
+    const keyParam = ETHERSCAN_KEY ? `&apikey=${ETHERSCAN_KEY}` : "";
+    const url = `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&offset=50&page=1${keyParam}`;
+    const response = await fetch(url);
+    const data = await response.json() as any;
+    // Etherscan returns status "0" with NOTOK for errors or empty tx lists
+    // Empty address is not an error — just return the raw response
+    res.json(data);
+  } catch (err: any) {
+    logger.error("Etherscan txlist proxy failed", { address, error: err.message });
+    res.status(500).json({ error: "Failed to fetch transactions from Etherscan" });
+  }
+});
+
+router.get("/btc/:address", async (req: Request, res: Response) => {
+  const { address } = req.params;
+  if (
+    !/^(1|3)[a-zA-HJ-NP-Z0-9]{25,34}$/.test(address) &&
+    !/^bc1[a-zA-HJ-NP-Z0-9]{6,87}$/.test(address)
+  ) {
+    return res.status(400).json({ error: "Invalid BTC address" });
+  }
+  try {
+    const url = `https://blockchain.info/rawaddr/${address}?limit=50&cors=true`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `blockchain.info returned ${response.status}` });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    logger.error("BTC proxy failed", { address, error: err.message });
+    res.status(500).json({ error: "Failed to fetch BTC data" });
+  }
+});
+
+// ─── OpenAI Treasury Agent ────────────────────────────────────────────────────
+// POST /api/treasury/analyze — runs GPT agent over treasury snapshot
+
+interface TreasurySnapshot {
+  address: string;
+  type: "btc" | "evm";
+  balance: number;
+  txCount: number;
+  monthlyBurn: number;
+  runway: number | null;
+  reserveScore: number;
+  recentTxs: Array<{ hash: string; time: string; value: string; direction: string }>;
+}
+
+router.post("/analyze", async (req: Request, res: Response) => {
+  const snapshot = req.body as TreasurySnapshot;
+
+  if (!snapshot?.address) {
+    return res.status(400).json({ error: "Treasury snapshot required" });
+  }
+
+  if (!OPENAI_KEY) {
+    // Return a deterministic heuristic analysis when no OpenAI key is set
+    const insights = buildHeuristicInsights(snapshot);
+    return res.json({ insights, model: "heuristic", powered_by: "built-in" });
+  }
+
+  try {
+    const systemPrompt = `You are a Bitcoin treasury analyst AI for Settlemint — a Bitcoin-native cashflow automation system built on the Mezo network.
+Your job is to analyze on-chain treasury data and provide concise, actionable insights.
+Respond with a JSON object containing:
+- "summary": one sentence treasury health summary (max 25 words)
+- "insights": array of 3-4 bullet insights (each max 20 words, start with an emoji)
+- "risks": array of 1-2 identified risks or concerns (max 20 words each)
+- "recommendation": one actionable recommendation for automating cashflow via Settlemint (max 30 words)
+- "health": "healthy" | "caution" | "critical"`;
+
+    const userPrompt = `Analyze this treasury:
+Address: ${snapshot.address} (${snapshot.type === "btc" ? "Bitcoin" : "EVM/Ethereum"})
+Balance: ${snapshot.balance.toFixed(6)} ${snapshot.type === "btc" ? "BTC" : "ETH"}
+Monthly Burn Rate: ${snapshot.monthlyBurn > 0 ? snapshot.monthlyBurn.toFixed(6) : "0"} ${snapshot.type === "btc" ? "BTC" : "ETH"}
+Runway: ${snapshot.runway ? `${snapshot.runway.toFixed(1)} months` : "Infinite (no outflows)"}
+Total Transactions: ${snapshot.txCount}
+Reserve Score: ${snapshot.reserveScore}/100
+Recent Activity: ${snapshot.recentTxs.length} recent transactions analyzed`;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 500,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`OpenAI API error: ${response.status} — ${err}`);
+    }
+
+    const aiData = await response.json() as any;
+    const content = JSON.parse(aiData.choices[0].message.content);
+    res.json({ ...content, model: "gpt-4o-mini", powered_by: "openai" });
+  } catch (err: any) {
+    logger.error("OpenAI treasury analysis failed", { error: err.message });
+    // Fall back to heuristic analysis on OpenAI failure
+    const insights = buildHeuristicInsights(snapshot);
+    res.json({ insights, model: "heuristic", powered_by: "built-in", fallback: true });
+  }
+});
+
+// ─── Heuristic fallback analysis (no OpenAI key needed) ──────────────────────
+
+function buildHeuristicInsights(s: TreasurySnapshot) {
+  const ticker = s.type === "btc" ? "BTC" : "ETH";
+  const points: string[] = [];
+
+  if (s.balance === 0) {
+    points.push(`⚠️ Zero balance detected — treasury appears empty or unfunded.`);
+  } else if (s.reserveScore >= 80) {
+    points.push(`✅ Reserve score ${s.reserveScore}/100 — strong liquidity position.`);
+  } else if (s.reserveScore >= 50) {
+    points.push(`🟡 Reserve score ${s.reserveScore}/100 — moderate buffer, monitor burn rate.`);
+  } else {
+    points.push(`🔴 Reserve score ${s.reserveScore}/100 — low reserves, action recommended.`);
+  }
+
+  if (s.monthlyBurn > 0) {
+    points.push(`📉 Monthly burn: ${s.monthlyBurn.toFixed(4)} ${ticker} detected from on-chain outflows.`);
+  } else {
+    points.push(`📊 No outflows detected in 90-day window — dormant or incoming-only treasury.`);
+  }
+
+  if (s.runway !== null) {
+    if (s.runway < 3) {
+      points.push(`🚨 Runway only ${s.runway.toFixed(1)} months — automate expense payments immediately.`);
+    } else if (s.runway < 12) {
+      points.push(`⏱️ ${s.runway.toFixed(1)}-month runway — consider automating recurring payments.`);
+    } else {
+      points.push(`🏦 ${s.runway.toFixed(1)}-month runway — treasury well-positioned for automation.`);
+    }
+  } else {
+    points.push(`♾️ Infinite runway — no spending detected, treasury fully preserved.`);
+  }
+
+  if (s.txCount > 0) {
+    points.push(`🔗 ${s.txCount} transactions analyzed — Settlemint can automate recurring patterns.`);
+  }
+
+  return points;
+}
+
+export default router;

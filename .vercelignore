@@ -1,0 +1,6 @@
+pnpm-workspace.yaml
+pnpm-lock.yaml
+bun.lock
+backend
+contracts
+shared
