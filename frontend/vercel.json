@@ -1,9 +1,9 @@
 {
-  "version": 2,
   "framework": "nextjs",
-  "rootDirectory": "frontend",
   "installCommand": "npm install -g pnpm@9.15.9 && pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": ".next",
-  "nodeVersion": "20.x"
+  "env": {
+    "NEXT_PUBLIC_DEMO_MODE": "true"
+  }
 }
