@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "rootDirectory": "frontend",
+  "installCommand": "npx pnpm@9.15.9 install --no-frozen-lockfile",
+  "buildCommand": "npx pnpm@9.15.9 run build",
+  "outputDirectory": ".next",
+  "nodeVersion": "20.x"
+}
