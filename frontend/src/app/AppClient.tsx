@@ -833,6 +833,42 @@ function LandingPage() {
           </Reveal>
         </section>
 
+        {/* ── ARCHITECTURE ── */}
+        <section id="architecture"
+          className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14"
+          style={{ paddingTop: 'clamp(72px,9vw,120px)', paddingBottom: 'clamp(56px,7vw,96px)' }}>
+          <Reveal>
+            <div className="text-center mb-14">
+              <SectionLabel>Architecture</SectionLabel>
+              <h2 className="font-bold leading-[1.0] tracking-[-0.05em]"
+                style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.2rem,3.8vw,3.6rem)', color: 'var(--text-primary)' }}>
+                Three layers.<br />
+                <span className="gradient-btc">One bitcoin pipeline.</span>
+              </h2>
+            </div>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <ArchitectureDiagram />
+          </Reveal>
+        </section>
+
+        {/* ── STATS ── */}
+        <section className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14"
+          style={{ paddingTop: 'clamp(40px,5vw,80px)', paddingBottom: 'clamp(56px,7vw,96px)' }}>
+          <Reveal>
+            <StatsRow />
+          </Reveal>
+        </section>
+
+        {/* ── BOT CTA ── */}
+        <section id="bot"
+          className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14"
+          style={{ paddingTop: 'clamp(40px,5vw,80px)', paddingBottom: 'clamp(72px,9vw,120px)' }}>
+          <Reveal>
+            <BotCta />
+          </Reveal>
+        </section>
+
         {/* ── WALLET ANALYZER ── */}
         <WalletAnalyzer />
 
@@ -915,6 +951,243 @@ function LandingPage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// ── Count-up ────────────────────────────────────────────────
+function CountUp({ to, decimals = 0, prefix = '', suffix = '', durationMs = 1400 }: {
+  to: number; decimals?: number; prefix?: string; suffix?: string; durationMs?: number;
+}) {
+  const [value, setValue] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    if (started || !ref.current) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started) {
+        setStarted(true);
+        const start = performance.now();
+        const step = (now: number) => {
+          const t = Math.min((now - start) / durationMs, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+          setValue(eased * to);
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+    }, { threshold: 0.25 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [started, to, durationMs]);
+
+  const formatted = decimals === 0
+    ? Math.round(value).toLocaleString()
+    : value.toFixed(decimals);
+  return <span ref={ref}>{prefix}{formatted}{suffix}</span>;
+}
+
+// ── Architecture Diagram ────────────────────────────────────
+function ArchitectureDiagram() {
+  const layers = [
+    { tag: '01', name: 'Capital Layer',     subtitle: 'Mezo',                 desc: 'BTC collateral. MUSD minting via MUSDVault.sol. Non-custodial.', color: '#F7931A' },
+    { tag: '02', name: 'Automation Layer',  subtitle: 'Bitstream Agent',      desc: 'Scheduler, payment executor, vault monitor, AI forecast agent.', color: '#00C9A7' },
+    { tag: '03', name: 'Payment Layer',     subtitle: 'x402 + on-chain',      desc: 'HTTP 402 pay-per-request and direct MUSD wallet transfers.',     color: '#8B5CF6' },
+  ];
+
+  return (
+    <div className="relative">
+      {/* Connector lines (desktop only) */}
+      <div className="pointer-events-none absolute inset-x-0 top-[50%] hidden lg:block -translate-y-1/2 z-0">
+        <svg className="w-full" height="2" viewBox="0 0 100 2" preserveAspectRatio="none">
+          <line x1="0" y1="1" x2="100" y2="1" stroke="rgba(247,147,26,0.25)" strokeDasharray="0.6 0.6" strokeWidth="0.2" />
+        </svg>
+      </div>
+
+      <div className="relative grid gap-5 lg:grid-cols-3 z-10">
+        {layers.map((l, i) => (
+          <motion.div key={l.tag}
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-8%' }}
+            transition={{ duration: 0.6, ease: E, delay: i * 0.08 }}
+            className="relative rounded-[22px] p-8 card-base"
+            style={{ border: `1px solid ${l.color}30` }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px rounded-t-[22px]"
+              style={{ background: `linear-gradient(90deg, transparent 8%, ${l.color}55 50%, transparent 92%)` }} />
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl"
+                style={{ background: `${l.color}14`, border: `1px solid ${l.color}28` }}>
+                <span className="font-mono text-[11px] font-bold" style={{ color: l.color }}>{l.tag}</span>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: l.color }}>
+                {l.subtitle}
+              </span>
+            </div>
+
+            <h3 className="font-bold mb-3"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', letterSpacing: '-0.025em', fontSize: '1.25rem' }}>
+              {l.name}
+            </h3>
+            <p className="text-[0.95rem] leading-[1.9]" style={{ color: 'var(--text-secondary)' }}>
+              {l.desc}
+            </p>
+
+            {/* arrow → between cards on mobile */}
+            {i < layers.length - 1 && (
+              <div className="mt-6 lg:hidden flex items-center justify-center">
+                <ArrowRight className="h-4 w-4" style={{ color: l.color, opacity: 0.6 }} />
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Stats Row ──────────────────────────────────────────────
+function StatsRow() {
+  const stats = [
+    { label: 'Total BTC Secured',    value: 142.7,    decimals: 1, suffix: ' BTC', color: '#F7931A' },
+    { label: 'Payments Automated',   value: 2847,     decimals: 0, suffix: '',     color: '#00C9A7' },
+    { label: 'MUSD in Circulation',  value: 8.4,      decimals: 1, prefix: '$',    suffix: 'M', color: '#8B5CF6' },
+    { label: 'Active Vaults',        value: 341,      decimals: 0, suffix: '',     color: '#FF0040' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {stats.map((s, i) => (
+        <motion.div key={s.label}
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-10%' }}
+          transition={{ duration: 0.55, ease: E, delay: i * 0.06 }}
+          className="rounded-[22px] p-7 card-base"
+          style={{ border: `1px solid ${s.color}24` }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] mb-4" style={{ color: s.color }}>
+            {s.label}
+          </p>
+          <p className="font-bold leading-none tabular-nums"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.8rem,3.2vw,2.8rem)',
+              letterSpacing: '-0.045em',
+              color: 'var(--text-primary)',
+            }}>
+            <CountUp to={s.value} decimals={s.decimals} prefix={s.prefix} suffix={s.suffix} />
+          </p>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ── Bot CTA ─────────────────────────────────────────────────
+function BotCta() {
+  const [addr, setAddr] = useState('');
+
+  const goAnalyze = () => {
+    if (!addr.trim()) return;
+    window.location.href = `/analyze?address=${encodeURIComponent(addr.trim())}`;
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-[36px] p-10 sm:p-14 card-base"
+      style={{ border: '1px solid rgba(247,147,26,0.18)' }}>
+      <div className="absolute inset-x-0 top-0 h-px"
+        style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(247,147,26,0.55) 50%, transparent 95%)' }} />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-x-0 bottom-0 h-72"
+          style={{ background: 'radial-gradient(ellipse at 50% 130%, rgba(247,147,26,0.10), transparent 55%)' }} />
+      </div>
+
+      <div className="relative grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+        <div>
+          <SectionLabel>Wallet Analyzer · Free</SectionLabel>
+          <h2 className="font-bold leading-[1.0] tracking-[-0.05em]"
+            style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,3.4vw,3.2rem)', color: 'var(--text-primary)' }}>
+            Check your wallet<br />
+            <span className="gradient-btc">in 30 seconds.</span>
+          </h2>
+          <p className="mt-6 text-[1.05rem] leading-[1.9]" style={{ color: 'var(--text-secondary)', maxWidth: 460 }}>
+            Paste any EVM or Bitcoin address. Get monthly burn, runway, recurring patterns, and reserve score — backed by GPT-4o. No wallet connection needed.
+          </p>
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-xl">
+            <input
+              type="text"
+              value={addr}
+              onChange={e => setAddr(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') goAnalyze(); }}
+              placeholder="0x… or bc1q…"
+              className="flex-1 rounded-[var(--r-md)] px-5 py-3.5 text-[14px] font-mono outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                color: 'var(--text-primary)',
+              }}
+            />
+            <button
+              onClick={goAnalyze}
+              className="inline-flex items-center justify-center gap-2 rounded-[var(--r-md)] px-6 py-3.5 text-[14px] font-bold transition-all"
+              style={{
+                background: '#F7931A',
+                color: '#0a0a0a',
+                boxShadow: '0 4px 24px rgba(247,147,26,0.35)',
+              }}
+            >
+              Analyze Free
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: 'var(--text-muted)' }}>
+            Or message us on
+          </p>
+          <a href="https://t.me/BotFather" target="_blank" rel="noreferrer"
+            className="flex items-center gap-4 rounded-[20px] p-5 transition-all card-base"
+            style={{ border: '1px solid rgba(34,158,255,0.22)' }}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl flex-shrink-0"
+              style={{ background: 'rgba(34,158,255,0.12)', border: '1px solid rgba(34,158,255,0.28)' }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#229ed9">
+                <path d="M22 3L2 11l6 2 2 7 4-4 6 5 2-18z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold leading-tight" style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>Telegram bot</p>
+              <p className="text-[0.85rem] mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>
+                /analyze · /vault — get insights via chat
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+          </a>
+
+          <a href="https://wa.me/" target="_blank" rel="noreferrer"
+            className="flex items-center gap-4 rounded-[20px] p-5 transition-all card-base"
+            style={{ border: '1px solid rgba(37,211,102,0.22)' }}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl flex-shrink-0"
+              style={{ background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.28)' }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366">
+                <path d="M12 2a10 10 0 0 0-8.7 14.9L2 22l5.2-1.3A10 10 0 1 0 12 2zm5.6 14.2c-.2.6-1.2 1.2-1.7 1.2-.4 0-1 0-3.3-.9-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.5c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.1 1 2 1.3 2.3 1.4.3.1.4.1.6-.1l.6-.7c.2-.2.4-.2.6-.1l1.7.8c.2.1.4.2.4.3 0 .2 0 .8-.3 1.4z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold leading-tight" style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>WhatsApp bot</p>
+              <p className="text-[0.85rem] mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>
+                analyse · balance — same insights, native to WA
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

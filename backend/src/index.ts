@@ -17,6 +17,7 @@ import vaultRouter from "./routes/vault";
 import treasuryRouter from "./routes/treasury";
 import walletRouter from "./routes/wallet";
 import { startTelegramBot } from "./bots/telegramBot";
+import { startWhatsappBot, whatsappRouter } from "./bots/whatsappBot";
 import { mkdir } from "fs/promises";
 
 const PORT = process.env.PORT || 4000;
@@ -45,6 +46,7 @@ async function bootstrap() {
   app.use("/api", vaultRouter);
   app.use("/api/treasury", treasuryRouter);
   app.use("/api/wallet", walletRouter);
+  app.use("/api/whatsapp", whatsappRouter);
 
   // Root
   app.get("/", (_req, res) => {
@@ -71,6 +73,8 @@ async function bootstrap() {
         "GET  /api/treasury/evm/:address/balance",
         "GET  /api/treasury/evm/:address/txlist",
         "GET  /api/treasury/btc/:address",
+        "GET  /api/whatsapp/webhook",
+        "POST /api/whatsapp/webhook",
       ],
     });
   });
@@ -87,6 +91,9 @@ async function bootstrap() {
 
   // Start Telegram bot (no-op if TELEGRAM_BOT_TOKEN not set)
   startTelegramBot();
+
+  // WhatsApp webhook is a noop until WHATSAPP_TOKEN + WHATSAPP_PHONE_NUMBER_ID are set
+  startWhatsappBot();
 }
 
 bootstrap().catch((err) => {

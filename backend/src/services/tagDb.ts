@@ -28,6 +28,29 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_tags_wallet ON transaction_tags(wallet_addr);
   CREATE UNIQUE INDEX IF NOT EXISTS idx_tags_tx_wallet ON transaction_tags(tx_hash, wallet_addr);
+
+  CREATE TABLE IF NOT EXISTS wallet_analyses (
+    id            TEXT PRIMARY KEY,
+    wallet_addr   TEXT NOT NULL,
+    chain         TEXT NOT NULL,
+    range_days    INTEGER NOT NULL,
+    monthly_burn  REAL NOT NULL DEFAULT 0,
+    reserve_score INTEGER NOT NULL DEFAULT 0,
+    runway        TEXT,
+    summary_json  TEXT NOT NULL,
+    created_at    INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+  CREATE INDEX IF NOT EXISTS idx_analyses_wallet ON wallet_analyses(wallet_addr, created_at DESC);
+
+  CREATE TABLE IF NOT EXISTS agent_logs (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    source      TEXT NOT NULL,
+    level       TEXT NOT NULL DEFAULT 'info',
+    event       TEXT NOT NULL,
+    payload     TEXT,
+    created_at  INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+  CREATE INDEX IF NOT EXISTS idx_logs_source ON agent_logs(source, created_at DESC);
 `);
 
 export interface TransactionTag {
@@ -93,4 +116,130 @@ export function buildTagContext(walletAddress: string): string {
   const tags = getTagsByWallet(walletAddress);
   if (tags.length === 0) return "";
   return tags.map((t) => `TX ${t.txHash}: user labeled "${t.userTag}" (${t.category})`).join("\n");
+}
+
+// ─── wallet_analyses ─────────────────────────────────────────────────────────
+const stmtInsertAnalysis = db.prepare(`
+  INSERT INTO wallet_analyses
+    (id, wallet_addr, chain, range_days, monthly_burn, reserve_score, runway, summary_json, created_at)
+  VALUES
+    (@id, @walletAddr, @chain, @rangeDays, @monthlyBurn, @reserveScore, @runway, @summaryJson, unixepoch())
+`);
+
+const stmtGetLatestAnalysis = db.prepare(`
+  SELECT id, wallet_addr, chain, range_days, monthly_burn, reserve_score, runway, summary_json, created_at
+  FROM wallet_analyses
+  WHERE wallet_addr = ? AND chain = ?
+  ORDER BY created_at DESC
+  LIMIT 1
+`);
+
+export interface SavedWalletAnalysis {
+  id: string;
+  walletAddress: string;
+  chain: "evm" | "bitcoin";
+  rangeDays: number;
+  monthlyBurn: number;
+  reserveScore: number;
+  runway: string | null;
+  summary: unknown;
+  createdAt: number;
+}
+
+export function saveWalletAnalysis(
+  walletAddress: string,
+  chain: "evm" | "bitcoin",
+  rangeDays: number,
+  summary: { monthlyBurn?: number; reserveScore?: number; runway?: string | null; [k: string]: unknown }
+): SavedWalletAnalysis {
+  const id = `${walletAddress.toLowerCase()}_${Date.now()}`;
+  stmtInsertAnalysis.run({
+    id,
+    walletAddr: walletAddress.toLowerCase(),
+    chain,
+    rangeDays,
+    monthlyBurn: summary.monthlyBurn ?? 0,
+    reserveScore: summary.reserveScore ?? 0,
+    runway: summary.runway ?? null,
+    summaryJson: JSON.stringify(summary),
+  });
+  return {
+    id,
+    walletAddress: walletAddress.toLowerCase(),
+    chain,
+    rangeDays,
+    monthlyBurn: summary.monthlyBurn ?? 0,
+    reserveScore: summary.reserveScore ?? 0,
+    runway: summary.runway ?? null,
+    summary,
+    createdAt: Math.floor(Date.now() / 1000),
+  };
+}
+
+export function getLatestWalletAnalysis(
+  walletAddress: string,
+  chain: "evm" | "bitcoin"
+): SavedWalletAnalysis | null {
+  const row = stmtGetLatestAnalysis.get(walletAddress.toLowerCase(), chain) as any;
+  if (!row) return null;
+  return {
+    id: row.id,
+    walletAddress: row.wallet_addr,
+    chain: row.chain,
+    rangeDays: row.range_days,
+    monthlyBurn: row.monthly_burn,
+    reserveScore: row.reserve_score,
+    runway: row.runway,
+    summary: JSON.parse(row.summary_json),
+    createdAt: row.created_at,
+  };
+}
+
+// ─── agent_logs ──────────────────────────────────────────────────────────────
+const stmtInsertLog = db.prepare(`
+  INSERT INTO agent_logs (source, level, event, payload, created_at)
+  VALUES (@source, @level, @event, @payload, unixepoch())
+`);
+
+const stmtRecentLogs = db.prepare(`
+  SELECT id, source, level, event, payload, created_at
+  FROM agent_logs
+  WHERE source = ?
+  ORDER BY created_at DESC
+  LIMIT ?
+`);
+
+export interface AgentLogEntry {
+  id: number;
+  source: string;
+  level: "info" | "warn" | "error" | "debug";
+  event: string;
+  payload: unknown;
+  createdAt: number;
+}
+
+export function recordAgentLog(
+  source: string,
+  event: string,
+  payload?: unknown,
+  level: "info" | "warn" | "error" | "debug" = "info"
+): void {
+  stmtInsertLog.run({
+    source,
+    level,
+    event,
+    payload: payload ? JSON.stringify(payload) : null,
+  });
+}
+
+export function getRecentAgentLogs(source: string, limit = 100): AgentLogEntry[] {
+  const rows = stmtRecentLogs.all(source, limit) as any[];
+  return rows.map((r) => ({
+    id: r.id,
+    source: r.source,
+    level: r.level,
+    event: r.event,
+    payload: r.payload ? JSON.parse(r.payload) : null,
+    createdAt: r.created_at,
+  }));
 }
