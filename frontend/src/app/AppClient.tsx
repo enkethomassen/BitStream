@@ -28,8 +28,7 @@ import { useVault } from '@/hooks/useVault';
 import { api, type SchedulerStatus, type PaymentStats, type ExecutionLogEntry } from '@/lib/api';
 import { useNetwork } from '@/context/network-context';
 import type { Tab } from '@/components/types';
-import dynamic from 'next/dynamic';
-const Hero3DScene = dynamic(() => import('@/components/landing/Hero3DScene').then(m => ({ default: m.Hero3DScene })), { ssr: false });
+import { BitstreamFlowAnimation } from '@/components/landing/BitstreamFlowAnimation';
 
 // ── Easing constants (Impeccable / ACE system) ─────────────
 const E: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -664,11 +663,11 @@ function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* Right: 3D floating dashboard preview */}
+            {/* Right: Bitstream Flow Animation (pure Framer Motion) */}
             <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: E, delay: 0.15 }}
               className="relative hidden lg:block">
-              <Hero3DScene className="w-full" style={{ height: '560px' }} />
+              <BitstreamFlowAnimation />
             </motion.div>
           </div>
         </section>

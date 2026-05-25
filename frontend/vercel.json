@@ -1,9 +1,0 @@
-{
-  "framework": "nextjs",
-  "installCommand": "npm install -g pnpm@9.15.9 && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": ".next",
-  "env": {
-    "NEXT_PUBLIC_DEMO_MODE": "true"
-  }
-}

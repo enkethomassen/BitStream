@@ -1,4 +1,10 @@
+backend/
+contracts/
+shared/
 bun.lock
-backend
-contracts
-shared
+*.md
+*.webp
+*.html
+.orchids/
+.devcontainer/
+.env

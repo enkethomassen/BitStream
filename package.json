@@ -4,6 +4,10 @@
   "private": true,
   "description": "Bitstream — Bitcoin-backed automated cashflow engine on Mezo. Lock BTC, mint MUSD, automate payments.",
   "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "workspaces": [
     "contracts",
     "backend",

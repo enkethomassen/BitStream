@@ -18,8 +18,11 @@ export const metadata: Metadata = {
     "Lock BTC as collateral, mint MUSD, and automate recurring payments. Self-custodial cashflow infrastructure powered by Mezo.",
   keywords: ["Mezo", "Bitcoin", "MUSD", "DeFi", "x402", "stablecoin", "cashflow", "Bitstream"],
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
     shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 
